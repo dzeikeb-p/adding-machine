@@ -1,0 +1,13 @@
+{
+  "name": "@adding-machine/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@adding-machine/core": "workspace:*"
+  }
+}
