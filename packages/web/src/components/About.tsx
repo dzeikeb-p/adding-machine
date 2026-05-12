@@ -35,7 +35,16 @@ export function About() {
       <p style={P}>
         In 1960, Gysin collaborated with mathematician Ian Sommerville on a Honeywell Series 200
         mainframe to generate every permutation of short phrases — most famously{' '}
-        <em>I AM THAT I AM</em> (the Divine Tautology from Exodus 3:14). These were broadcast on the
+        <em>I AM THAT I AM</em> (the Divine Tautology{' '}
+        <a
+          href="https://www.blueletterbible.org/verse/kjv/exo/3/14/"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: 'var(--color-ink)', textDecorationColor: 'var(--color-accent)' }}
+        >
+          from Exodus 3:14
+        </a>
+        ). These were broadcast on the
         BBC Third Programme as <em>The Permutated Poems of Brion Gysin</em>. The computer was
         Gysin's adding machine: a combinatorial engine for language.
       </p>
