@@ -27,7 +27,7 @@ All operations are deterministic given a seed. Same input + same seed = same out
 
 | Surface | URL | For |
 |---|---|---|
-| Web app | https://addingmachine.pages.dev | Humans with a textarea and a curiosity |
+| Web app | https://adding-machine-amt.pages.dev | Humans with a textarea and a curiosity |
 | REST API | https://adding-machine-api.sheartworldwide.workers.dev | Scripts, pipelines, anything that speaks HTTP |
 | MCP server | https://adding-machine-api.sheartworldwide.workers.dev/mcp | Claude Code, Claude Desktop, Cursor, any MCP-compliant agent |
 
@@ -35,7 +35,7 @@ All operations are deterministic given a seed. Same input + same seed = same out
 
 ### Web app
 
-Open https://addingmachine.pages.dev. Paste text. Pick a method. Pull the lever.
+Open https://adding-machine-amt.pages.dev. Paste text. Pick a method. Pull the lever.
 
 ### REST API
 
