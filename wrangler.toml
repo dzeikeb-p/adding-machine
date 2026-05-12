@@ -1,0 +1,4 @@
+# Cloudflare Pages build configuration for the monorepo.
+# Tells Pages where to find the web app's built output.
+# The API Worker has its own wrangler.toml at packages/api/wrangler.toml.
+pages_build_output_dir = "packages/web/dist"
