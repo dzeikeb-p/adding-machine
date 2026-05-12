@@ -1,5 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import './types.js';
+import { handleMcpRequest } from '@adding-machine/mcp';
 import { apiReference } from '@scalar/hono-api-reference';
 import { cors } from 'hono/cors';
 import { registerCutup } from './routes/cutup.js';
@@ -42,6 +43,9 @@ export function createApp() {
   registerHealth(app);
   registerMethods(app);
   registerCutup(app);
+
+  // MCP server — Web Standard streamable HTTP, stateless (one instance per request)
+  app.all('/mcp', (c) => handleMcpRequest(c.req.raw));
 
   // OpenAPI spec
   app.doc('/openapi.json', {

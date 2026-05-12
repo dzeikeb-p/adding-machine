@@ -205,4 +205,76 @@ Format: date · topic · decision · rationale · status.
 
 ---
 
+---
+
+## 2026-05-12 — Phase 4: Deploy
+
+### Wrangler upgraded from v3 to v4
+**Decision:** Upgraded `wrangler` in `packages/api` from `^3.114.17` to `^4.90.0`.
+**Rationale:** Wrangler v3 could not register a `workers.dev` subdomain interactively (non-interactive context returned "no"). Wrangler v4 handled the first deploy correctly and silenced the persistent update warnings.
+**Status:** Active.
+
+### Worker URL: `adding-machine-api.sheartworldwide.workers.dev`
+**Decision:** Worker deployed to `https://adding-machine-api.sheartworldwide.workers.dev`.
+**Rationale:** The `workers.dev` subdomain (`sheartworldwide`) was registered during the first successful wrangler v4 deploy. The Worker name `adding-machine-api` was set in `wrangler.toml`.
+**Status:** Active.
+
+### `workers_dev = true` made explicit in wrangler.toml
+**Decision:** Added `workers_dev = true` to `packages/api/wrangler.toml`.
+**Rationale:** Without it, wrangler v4 logs a warning that `workers_dev` is being enabled by default. Making it explicit silences the warning and documents the intent.
+**Status:** Active.
+
+### Pages deploy: direct upload via CLI, not GitHub integration
+**Decision:** Deployed web app via `wrangler pages deploy packages/web/dist --project-name adding-machine` rather than GitHub integration.
+**Rationale:** The Cloudflare dashboard's new unified "Create application" flow created a Worker project (not Pages) when using "Continue with GitHub", which injected `npx wrangler deploy` as the deploy command and broke every build. The CLI direct upload approach (`wrangler pages deploy`) created a proper Pages project correctly on the first attempt. GitHub auto-deploy can be wired in later from the Pages project settings.
+**Status:** Active. GitHub integration deferred.
+
+### Root `wrangler.toml` for Pages output directory
+**Decision:** Added `wrangler.toml` at the repo root with `pages_build_output_dir = "packages/web/dist"`.
+**Rationale:** Cloudflare Pages defaults to looking for output in `dist/` at the repo root. The Vite build outputs to `packages/web/dist`. The root `wrangler.toml` is the official Cloudflare-recommended way to configure this for monorepos. The API Worker's own `wrangler.toml` lives in `packages/api/` and is unaffected.
+**Status:** Active.
+
+### Deploy key: `adding_machine_deploy_key` with `github-adding-machine` SSH alias
+**Decision:** Generated a new ed25519 deploy key for the adding-machine GitHub repo, added SSH config alias `github-adding-machine`.
+**Rationale:** Follows the same pattern as the BKC project (`github-bkc` alias). Avoids passphrase-protected personal SSH keys and GitHub's removal of password authentication for git operations.
+**Status:** Active. Push via: `git push git@github-adding-machine:dzeikeb-p/adding-machine.git main`
+
+### Pages URL: `https://adding-machine.pages.dev`
+**Decision:** Canonical live URL for the web app.
+**Rationale:** Cloudflare assigned `adding-machine.pages.dev` as the project domain. The deployment-hash preview URL (`fb1abc91.adding-machine.pages.dev`) had SSL provisioning lag on first access; the canonical domain resolved immediately.
+**Status:** Active.
+
+---
+
+---
+
+## 2026-05-12 — Phase 5: MCP Server
+
+### Transport: `WebStandardStreamableHTTPServerTransport`
+**Decision:** Used `WebStandardStreamableHTTPServerTransport` (not `StreamableHTTPServerTransport`) from the MCP SDK.
+**Rationale:** `StreamableHTTPServerTransport` wraps Node.js `http.IncomingMessage`/`ServerResponse`. `WebStandardStreamableHTTPServerTransport` uses the Web Standard fetch API (Request/Response/ReadableStream) and works natively on Cloudflare Workers, Deno, Bun, and Node 18+. The SDK ships a Hono example using this class specifically.
+**Status:** Active.
+
+### MCP handler encapsulated in `packages/mcp`
+**Decision:** `packages/mcp` exports `handleMcpRequest(request: Request): Promise<Response>`. The `packages/api` app calls it with `c.req.raw` — no SDK import in the API package.
+**Rationale:** When `app.ts` imported `@modelcontextprotocol/sdk/server/streamableHttp.js` directly, Vite's wildcard exports-map resolution failed during tests. Encapsulating the SDK import inside `packages/mcp` (where it's a direct dependency) resolved this cleanly and also keeps the architecture correct: `api` depends on `mcp`, not on the MCP SDK.
+**Status:** Active.
+
+### Stateless server: one instance per request
+**Decision:** A fresh `McpServer` + `WebStandardStreamableHTTPServerTransport` is created for each incoming `/mcp` request. No session IDs.
+**Rationale:** Cloudflare Workers are stateless; there's no shared memory between requests. Stateless mode is correct and sufficient for our tools (which are pure functions). Stateful sessions (SSE notifications, long-lived connections) would require Durable Objects — out of scope for v1.
+**Status:** Active. Revisit with Durable Objects if server-initiated notifications are needed.
+
+### Tools: 4, Prompts: 2, Resources: 3
+**Decision:** `cutup_quadrant`, `cutup_shuffle`, `cutup_fold`, `cutup_permutate` as tools; `cutup_news` and `divine_tautology` as prompts; three `gysin://` resources with short fair-use excerpts.
+**Rationale:** Exactly as specified in SPEC §4.1–4.4. Tool descriptions are written for the LLM consumer — specific enough to distinguish between methods, concise enough not to bloat the context window.
+**Status:** Active.
+
+### `cutup_fold` uses `textA`/`textB`; `cutup_permutate` uses `phrase`
+**Decision:** MCP tool argument names differ slightly from the REST API (`text`/`textB`/`text`).
+**Rationale:** Follows SPEC §4.1 exactly. `textA`/`textB` is more expressive for a two-input fold operation. `phrase` communicates the constraint (short phrase, not arbitrary text) better than `text` for the permutation tool.
+**Status:** Active.
+
+---
+
 *Log maintained by Claude Code. Updated after every committed decision.*

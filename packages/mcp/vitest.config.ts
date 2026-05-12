@@ -8,7 +8,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@adding-machine/core': resolve(__dirname, '../core/src/index.ts'),
-      '@adding-machine/mcp': resolve(__dirname, '../mcp/src/index.ts'),
     },
   },
   test: {

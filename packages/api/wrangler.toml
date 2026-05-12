@@ -10,6 +10,7 @@ VERSION = "0.1.0"
 # Resolve core from TypeScript source so wrangler doesn't need a pre-built dist/
 [alias]
 "@adding-machine/core" = "../core/src/index.ts"
+"@adding-machine/mcp" = "../mcp/src/index.ts"
 
 # Rate limiting: 60 req/min per IP. namespace_id is arbitrary for local dev;
 # must match a rate limit rule in the Cloudflare dashboard for production.
