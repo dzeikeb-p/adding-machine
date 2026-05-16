@@ -308,4 +308,30 @@ Format: date · topic · decision · rationale · status.
 
 ---
 
+---
+
+## 2026-05-16 — Hash sharing fixes and fold-in correction
+
+### Bug: unified endpoint (`/v1/cutup`) not storing texts
+**Decision:** Changed all `storeText` calls in the unified handler from fire-and-forget to `await`.
+**Rationale:** The `replace_all` operation that fixed the individual route handlers used the variable name `resolved.text`. The unified handler used `resolvedText.text` — a different name — so those calls were silently skipped and remained unawaited. Cloudflare Workers return the response before any unawaited Promises complete, so KV writes never happened. The web UI uses the unified endpoint, so hash lookup always returned 404.
+**Status:** Fixed.
+
+### Bug: fold-in showed combined hash, not shareable individual hashes
+**Decision:** For fold-in, the API now returns `inputHash` (hash of source A) and `inputHashB` (hash of source B) as two separate fields. The combined `sha256(textA + '\x00' + textB)` hash is no longer used for fold-in sharing.
+**Rationale:** The combined `inputHash` from `foldIn()` in core is `sha256(textA + '\x00' + textB)` — a hash of the pair, not of either individual text. Only individual texts were stored in KV, so the combined hash could never be looked up. The UI was showing an unusable hash.
+**Status:** Fixed. `inputHashB` is an optional field on the API response; only present for fold-in.
+
+### Fold-in sharing requires two hashes
+**Decision:** To reproduce a fold-in result, the user must share two hashes (one per source) plus the seed. The web UI shows an `Input A` / `Input B` panel with separate Copy buttons when `inputHashB` is present.
+**Rationale:** Fold-in is a two-input operation. There is no meaningful single hash that identifies the pair AND can be used to reproduce the operation. Two hashes are the correct and minimal shareable reference for fold-in.
+**Status:** Active.
+
+### `inputHashB` added to core `CutUpResultSchema` and web `ApiResult` type
+**Decision:** Added `inputHashB: z.string().optional()` to `CutUpResultSchema` in `packages/core/src/schemas.ts` and `inputHashB?: string` to `ApiResult` in `packages/web/src/types.ts`.
+**Rationale:** Single source of truth for the response shape. The field is optional so all non-fold responses remain unchanged.
+**Status:** Active.
+
+---
+
 *Log maintained by Claude Code. Updated after every committed decision.*
