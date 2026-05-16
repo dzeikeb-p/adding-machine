@@ -243,15 +243,17 @@ export function registerCutup(app: OpenAPIHono<{ Bindings: Bindings }>) {
           const resolvedB = await resolveText(rawB, store);
           if (!resolvedB) return c.json({ error: `Hash not found: ${rawB}` }, 404);
           result = foldIn(resolvedText.text, resolvedB.text, req.options as Parameters<typeof foldIn>[2]);
-          storeText(sha256hex(resolvedText.text), resolvedText.text, store);
-          storeText(sha256hex(resolvedB.text), resolvedB.text, store);
+          await Promise.all([
+            storeText(sha256hex(resolvedText.text), resolvedText.text, store),
+            storeText(sha256hex(resolvedB.text), resolvedB.text, store),
+          ]);
           break;
         }
         case 'permutation':
           result = permutate(resolvedText.text, req.options as Parameters<typeof permutate>[1]);
           break;
       }
-      storeText(result.inputHash, resolvedText.text, store);
+      await storeText(result.inputHash, resolvedText.text, store);
       return c.json(withId(result));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Cut-up failed';
