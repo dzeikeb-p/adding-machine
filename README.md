@@ -21,7 +21,7 @@ Four operations, all historically grounded:
 - **Fold-in** — Burroughs' extension. Fold a second source into the first; two voices interleave along the seam.
 - **Permutate** — Sommerville mode. Generate every reordering of a short phrase, in the style of `I AM THAT I AM`.
 
-All operations are deterministic given a seed. Same input + same seed = same output, always.
+All operations are deterministic given a seed. Same input + same seed = same output, always. [Tell me more about how I can use the seed →](docs/seed.md)
 
 ## Three surfaces
 
