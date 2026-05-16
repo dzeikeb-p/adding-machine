@@ -134,28 +134,42 @@ export function OutputPane({ result, method, lockSeed, onRunAgain, onToggleLock 
         <span className="label" style={{ color: 'var(--color-rule)' }}>
           Reproduce this cut-up
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-xs)',
-              color: 'var(--color-ink)',
-              wordBreak: 'break-all',
-              flex: 1,
-            }}
-          >
-            {result.inputHash}
-          </span>
-          <CopyButton text={result.inputHash} label="Copy hash" />
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 'var(--text-xs)',
-            color: 'var(--color-rule)',
-          }}
-        >
-          Paste this hash as the input + use seed <strong style={{ color: 'var(--color-ink)' }}>{result.seed}</strong> to get this exact result on any device.
+
+        {/* Single hash (all methods except fold) */}
+        {!result.inputHashB && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-ink)', wordBreak: 'break-all', flex: 1 }}>
+              {result.inputHash}
+            </span>
+            <CopyButton text={result.inputHash} label="Copy hash" />
+          </div>
+        )}
+
+        {/* Two hashes for fold-in */}
+        {result.inputHashB && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span className="label" style={{ fontWeight: 400, minWidth: '60px' }}>Input A</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-ink)', wordBreak: 'break-all', flex: 1 }}>
+                {result.inputHash}
+              </span>
+              <CopyButton text={result.inputHash} label="Copy" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span className="label" style={{ fontWeight: 400, minWidth: '60px' }}>Input B</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-ink)', wordBreak: 'break-all', flex: 1 }}>
+                {result.inputHashB}
+              </span>
+              <CopyButton text={result.inputHashB} label="Copy" />
+            </div>
+          </>
+        )}
+
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-rule)' }}>
+          {result.inputHashB
+            ? <>Paste hash A into Input, hash B into Source B, use seed <strong style={{ color: 'var(--color-ink)' }}>{result.seed}</strong> — identical result on any device.</>
+            : <>Paste this hash as the input + use seed <strong style={{ color: 'var(--color-ink)' }}>{result.seed}</strong> — identical result on any device.</>
+          }
         </div>
       </div>
 

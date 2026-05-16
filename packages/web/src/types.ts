@@ -6,6 +6,7 @@ export interface ApiResult {
   method: Method;
   seed: string;
   inputHash: string;
+  inputHashB?: string; // fold-in only
   stats: {
     inputChars: number;
     outputChars: number;

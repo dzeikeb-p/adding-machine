@@ -277,4 +277,35 @@ Format: date · topic · decision · rationale · status.
 
 ---
 
+---
+
+## 2026-05-16 — Hash-based sharing (content-addressable storage)
+
+### Cloudflare KV for input text storage
+**Decision:** Added a `TEXT_STORE` KV namespace binding to the Worker. Every cut-up stores the input text in KV keyed by `text:{sha256hash}`.
+**Rationale:** Enables reproducible sharing: a user can share just a SHA-256 hash + seed and anyone can reproduce the exact same cut-up on any device, without transmitting the original text. The hash is already computed on every run; storage is the only addition.
+**Status:** Active. KV namespace ID: `aed7d7b379d24afaa8144fb59434850c`.
+
+### Hash lookup: 64-char hex string in text field triggers KV lookup
+**Decision:** If any `text` field is a valid SHA-256 hash (exactly 64 lowercase hex chars), the API looks it up in KV and substitutes the stored text before running the operation.
+**Rationale:** This is the minimal API change needed — no new endpoints, no new fields. The existing text field doubles as a hash reference. Returns 404 with a clear message if the hash is not found.
+**Status:** Active.
+
+### Fold-in: stores each source text individually
+**Decision:** For fold-in, both `text` and `textB` are stored separately by their individual hashes (not by the combined `inputHash`). Users share two hashes + seed for fold-in results.
+**Rationale:** Storing each source independently lets either text be reused in other operations (shuffle one source, quadrant the other, etc.). The combined `inputHash` from foldIn covers the specific pairing; the individual hashes cover reuse.
+**Status:** Active.
+
+### KV writes are awaited (not fire-and-forget)
+**Decision:** `storeText` is `async` and all call sites `await` it before returning the response.
+**Rationale:** In Cloudflare Workers, unawaited Promises may not complete before the Worker's execution context ends. First implementation used fire-and-forget (`.catch(() => {})`), which caused hash-not-found errors on immediate lookup. Awaiting adds ~1–5ms latency but guarantees the text is stored before the response is returned.
+**Status:** Active.
+
+### Web UI: "Reproduce this cut-up" panel in OutputPane
+**Decision:** Added a bordered section below the output showing the `inputHash` with a "Copy hash" button and instruction text. Added a `↳ stored text` indicator in InputPane when the input field contains a 64-char hex string.
+**Rationale:** Makes the sharing flow discoverable without explaining it in documentation. The hash panel appears after every run — the user sees it, copies it, and understands the sharing model naturally.
+**Status:** Active.
+
+---
+
 *Log maintained by Claude Code. Updated after every committed decision.*

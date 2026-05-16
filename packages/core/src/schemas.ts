@@ -67,6 +67,7 @@ export const CutUpResultSchema = z.object({
   method: z.enum(['quadrant', 'shuffle', 'fold', 'permutation']),
   seed: z.string(),
   inputHash: z.string(),
+  inputHashB: z.string().optional(), // fold-in only: hash of the second source text
   stats: z.object({
     inputChars: z.number(),
     outputChars: z.number(),

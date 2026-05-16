@@ -195,13 +195,14 @@ export function registerCutup(app: OpenAPIHono<{ Bindings: Bindings }>) {
     ]);
     if (!resolvedA) return c.json({ error: `Hash not found: ${rawText}` }, 404);
     if (!resolvedB) return c.json({ error: `Hash not found: ${rawTextB}` }, 404);
+    const hashA = sha256hex(resolvedA.text);
+    const hashB = sha256hex(resolvedB.text);
     const result = foldIn(resolvedA.text, resolvedB.text, options);
-    // Store each source text individually so either can be referenced alone later
     await Promise.all([
-      storeText(sha256hex(resolvedA.text), resolvedA.text, store),
-      storeText(sha256hex(resolvedB.text), resolvedB.text, store),
+      storeText(hashA, resolvedA.text, store),
+      storeText(hashB, resolvedB.text, store),
     ]);
-    return c.json(withId(result));
+    return c.json({ ...withId(result), inputHash: hashA, inputHashB: hashB });
   });
 
   app.openapi(permutateRoute, async (c) => {
@@ -230,6 +231,18 @@ export function registerCutup(app: OpenAPIHono<{ Bindings: Bindings }>) {
     const resolvedText = await resolveText(req.text, store);
     if (!resolvedText) return c.json({ error: `Hash not found: ${req.text}` }, 404);
     try {
+      // Fold-in handled separately — two sources, two hashes
+      if (req.method === 'fold') {
+        const rawB = req.textB ?? '';
+        const resolvedB = await resolveText(rawB, store);
+        if (!resolvedB) return c.json({ error: `Hash not found: ${rawB}` }, 404);
+        const hashA = sha256hex(resolvedText.text);
+        const hashB = sha256hex(resolvedB.text);
+        const result = foldIn(resolvedText.text, resolvedB.text, req.options as Parameters<typeof foldIn>[2]);
+        await Promise.all([storeText(hashA, resolvedText.text, store), storeText(hashB, resolvedB.text, store)]);
+        return c.json({ ...withId(result), inputHash: hashA, inputHashB: hashB });
+      }
+
       let result: ReturnType<typeof quadrant>;
       switch (req.method) {
         case 'quadrant':
@@ -238,17 +251,6 @@ export function registerCutup(app: OpenAPIHono<{ Bindings: Bindings }>) {
         case 'shuffle':
           result = shuffle(resolvedText.text, req.options as Parameters<typeof shuffle>[1]);
           break;
-        case 'fold': {
-          const rawB = req.textB ?? '';
-          const resolvedB = await resolveText(rawB, store);
-          if (!resolvedB) return c.json({ error: `Hash not found: ${rawB}` }, 404);
-          result = foldIn(resolvedText.text, resolvedB.text, req.options as Parameters<typeof foldIn>[2]);
-          await Promise.all([
-            storeText(sha256hex(resolvedText.text), resolvedText.text, store),
-            storeText(sha256hex(resolvedB.text), resolvedB.text, store),
-          ]);
-          break;
-        }
         case 'permutation':
           result = permutate(resolvedText.text, req.options as Parameters<typeof permutate>[1]);
           break;
