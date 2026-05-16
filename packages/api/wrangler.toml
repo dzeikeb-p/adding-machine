@@ -12,6 +12,12 @@ VERSION = "0.1.0"
 "@adding-machine/core" = "../core/src/index.ts"
 "@adding-machine/mcp" = "../mcp/src/index.ts"
 
+# Content-addressable text storage — keyed by SHA-256 hash of input.
+[[kv_namespaces]]
+binding = "TEXT_STORE"
+id = "aed7d7b379d24afaa8144fb59434850c"
+preview_id = "dd6737564f9549798bbbe4d2b7f11c2a"
+
 # Rate limiting: 60 req/min per IP. namespace_id is arbitrary for local dev;
 # must match a rate limit rule in the Cloudflare dashboard for production.
 [[unsafe.bindings]]

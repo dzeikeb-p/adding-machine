@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
+const HASH_RE = /^[0-9a-f]{64}$/;
+
 interface Props {
   text: string;
   onChange: (t: string) => void;
@@ -40,9 +42,24 @@ export function InputPane({ text, onChange, showTextB, textB, onChangeB }: Props
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <label className="label" htmlFor="input-a">
-        Input — drop a .txt or .md file, or type below
-      </label>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.1rem' }}>
+        <label className="label" htmlFor="input-a">
+          Input — drop a .txt or .md file, or type below
+        </label>
+        {HASH_RE.test(text.trim()) && (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-accent)',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+            }}
+          >
+            ↳ stored text
+          </span>
+        )}
+      </div>
       <div
         onDragOver={dropA.onDragOver}
         onDragLeave={dropA.onDragLeave}
@@ -65,9 +82,24 @@ export function InputPane({ text, onChange, showTextB, textB, onChangeB }: Props
 
       {showTextB && (
         <>
-          <label className="label" htmlFor="input-b">
-            Source B (fold-in)
-          </label>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '0.1rem' }}>
+            <label className="label" htmlFor="input-b">
+              Source B (fold-in)
+            </label>
+            {HASH_RE.test(textB.trim()) && (
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-accent)',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                ↳ stored text
+              </span>
+            )}
+          </div>
           <div
             onDragOver={dropB.onDragOver}
             onDragLeave={dropB.onDragLeave}

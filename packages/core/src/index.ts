@@ -1,4 +1,5 @@
 export { foldIn } from './fold.js';
+export { sha256hex } from './sha256.js';
 export { permutate } from './permutate.js';
 export { quadrant } from './quadrant.js';
 export {

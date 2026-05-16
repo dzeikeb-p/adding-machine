@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ApiResult, Method } from '../types.js';
 
 interface Props {
@@ -8,8 +9,8 @@ interface Props {
   onToggleLock: () => void;
 }
 
-function copyText(text: string) {
-  navigator.clipboard.writeText(text).catch(() => {});
+function copyText(text: string, onCopied?: () => void) {
+  navigator.clipboard.writeText(text).then(() => onCopied?.()).catch(() => {});
 }
 
 function downloadText(text: string, method: string) {
@@ -20,6 +21,19 @@ function downloadText(text: string, method: string) {
   a.download = `adding-machine-${method}-${Date.now()}.txt`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      className="ctrl-btn"
+      onClick={() => copyText(text, () => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}
+      aria-label={label}
+    >
+      {copied ? 'Copied!' : label}
+    </button>
+  );
 }
 
 export function OutputPane({ result, method, lockSeed, onRunAgain, onToggleLock }: Props) {
@@ -36,7 +50,7 @@ export function OutputPane({ result, method, lockSeed, onRunAgain, onToggleLock 
           marginBottom: '0.4rem',
         }}
       >
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'baseline' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
           <span className="label">Output</span>
           <span
             style={{
@@ -61,13 +75,7 @@ export function OutputPane({ result, method, lockSeed, onRunAgain, onToggleLock 
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.4rem' }}>
-          <button
-            className="ctrl-btn"
-            onClick={() => copyText(result.text)}
-            aria-label="Copy output to clipboard"
-          >
-            Copy
-          </button>
+          <CopyButton text={result.text} label="Copy" />
           <button
             className="ctrl-btn"
             onClick={() => downloadText(result.text, method)}
@@ -110,6 +118,45 @@ export function OutputPane({ result, method, lockSeed, onRunAgain, onToggleLock 
         }}
       >
         {result.stats.units} units · {result.stats.outputChars} chars · {result.stats.durationMs}ms
+      </div>
+
+      {/* Share reference */}
+      <div
+        style={{
+          marginTop: '0.75rem',
+          padding: '0.6rem 0.75rem',
+          border: '1px solid var(--color-rule)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.4rem',
+        }}
+      >
+        <span className="label" style={{ color: 'var(--color-rule)' }}>
+          Reproduce this cut-up
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-ink)',
+              wordBreak: 'break-all',
+              flex: 1,
+            }}
+          >
+            {result.inputHash}
+          </span>
+          <CopyButton text={result.inputHash} label="Copy hash" />
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--color-rule)',
+          }}
+        >
+          Paste this hash as the input + use seed <strong style={{ color: 'var(--color-ink)' }}>{result.seed}</strong> to get this exact result on any device.
+        </div>
       </div>
 
       {/* Action row */}

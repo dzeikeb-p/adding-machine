@@ -10,8 +10,10 @@ import {
   foldIn,
   permutate,
   quadrant,
+  sha256hex,
   shuffle,
 } from '@adding-machine/core';
+import { isHash, resolveText, storeText } from '../textStore.js';
 
 // ── Shared response schemas ───────────────────────────────────────────────────
 
@@ -22,6 +24,12 @@ function ok400() {
   return {
     content: { 'application/json': { schema: ErrSchema } },
     description: 'Invalid request (e.g. phrase too long for permutate mode=all)',
+  };
+}
+function ok404() {
+  return {
+    content: { 'application/json': { schema: ErrSchema } },
+    description: 'Hash not found in store',
   };
 }
 function ok413() {
@@ -45,7 +53,7 @@ const quadrantRoute = createRoute({
   tags: ['Cut-Up'],
   summary: 'Four-quadrant cut-up',
   description:
-    "Gysin's original razor method. Splits the text into four quadrants and reassembles BR|TL on top, BL|TR on bottom.",
+    "Gysin's original razor method. Splits the text into four quadrants and reassembles BR|TL on top, BL|TR on bottom. Pass a SHA-256 hash instead of text to reproduce a previously stored cut-up.",
   request: {
     body: {
       content: { 'application/json': { schema: QuadrantRequestSchema.openapi('QuadrantRequest') } },
@@ -54,6 +62,7 @@ const quadrantRoute = createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: OkSchema } }, description: 'Cut-up result' },
+    404: ok404(),
     413: ok413(),
     422: { content: { 'application/json': { schema: ErrSchema } }, description: 'Validation error' },
   },
@@ -64,7 +73,7 @@ const shuffleRoute = createRoute({
   path: '/v1/cutup/shuffle',
   tags: ['Cut-Up'],
   summary: 'Shuffle cut-up',
-  description: 'Tokenise by unit (word, ngram, sentence, line, phrase) and randomise order.',
+  description: 'Tokenise by unit (word, ngram, sentence, line, phrase) and randomise order. Pass a SHA-256 hash instead of text to reproduce a previously stored cut-up.',
   request: {
     body: {
       content: { 'application/json': { schema: ShuffleRequestSchema.openapi('ShuffleRequest') } },
@@ -73,6 +82,7 @@ const shuffleRoute = createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: OkSchema } }, description: 'Cut-up result' },
+    404: ok404(),
     413: ok413(),
     422: { content: { 'application/json': { schema: ErrSchema } }, description: 'Validation error' },
   },
@@ -83,7 +93,7 @@ const foldRoute = createRoute({
   path: '/v1/cutup/fold',
   tags: ['Cut-Up'],
   summary: 'Fold-in',
-  description: "Burroughs' fold-in: two texts interleaved at a configurable fold ratio.",
+  description: "Burroughs' fold-in: two texts interleaved at a configurable fold ratio. Either text field accepts a SHA-256 hash to reproduce a previously stored cut-up.",
   request: {
     body: {
       content: { 'application/json': { schema: FoldRequestSchema.openapi('FoldRequest') } },
@@ -92,6 +102,7 @@ const foldRoute = createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: OkSchema } }, description: 'Cut-up result' },
+    404: ok404(),
     413: ok413(),
     422: { content: { 'application/json': { schema: ErrSchema } }, description: 'Validation error' },
   },
@@ -103,7 +114,7 @@ const permutateRoute = createRoute({
   tags: ['Cut-Up'],
   summary: 'Permutation',
   description:
-    'Gysin/Sommerville mode. All permutations of a short phrase (≤7 words), or a sampled subset.',
+    'Gysin/Sommerville mode. All permutations of a short phrase (≤7 words), or a sampled subset. Pass a SHA-256 hash instead of text to reproduce a previously stored cut-up.',
   request: {
     body: {
       content: {
@@ -115,6 +126,7 @@ const permutateRoute = createRoute({
   responses: {
     200: { content: { 'application/json': { schema: OkSchema } }, description: 'Cut-up result' },
     400: ok400(),
+    404: ok404(),
     413: ok413(),
     422: { content: { 'application/json': { schema: ErrSchema } }, description: 'Validation error' },
   },
@@ -135,7 +147,7 @@ const unifiedRoute = createRoute({
   path: '/v1/cutup',
   tags: ['Cut-Up'],
   summary: 'Unified cut-up',
-  description: 'Single endpoint for all methods. Dispatch via the `method` field.',
+  description: 'Single endpoint for all methods. Dispatch via the `method` field. Text fields accept SHA-256 hashes for stored-text lookup.',
   request: {
     body: {
       content: { 'application/json': { schema: UnifiedSchema } },
@@ -145,6 +157,7 @@ const unifiedRoute = createRoute({
   responses: {
     200: { content: { 'application/json': { schema: OkSchema } }, description: 'Cut-up result' },
     400: ok400(),
+    404: ok404(),
     413: ok413(),
     422: { content: { 'application/json': { schema: ErrSchema } }, description: 'Validation error' },
   },
@@ -153,55 +166,92 @@ const unifiedRoute = createRoute({
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 export function registerCutup(app: OpenAPIHono<{ Bindings: Bindings }>) {
-  app.openapi(quadrantRoute, (c) => {
-    const { text, options } = c.req.valid('json');
-    return c.json(withId(quadrant(text, options)));
+  app.openapi(quadrantRoute, async (c) => {
+    const { text: rawText, options } = c.req.valid('json');
+    const store = c.env?.TEXT_STORE;
+    const resolved = await resolveText(rawText, store);
+    if (!resolved) return c.json({ error: `Hash not found: ${rawText}` }, 404);
+    const result = quadrant(resolved.text, options);
+    await storeText(result.inputHash, resolved.text, store);
+    return c.json(withId(result));
   });
 
-  app.openapi(shuffleRoute, (c) => {
-    const { text, options } = c.req.valid('json');
-    return c.json(withId(shuffle(text, options)));
+  app.openapi(shuffleRoute, async (c) => {
+    const { text: rawText, options } = c.req.valid('json');
+    const store = c.env?.TEXT_STORE;
+    const resolved = await resolveText(rawText, store);
+    if (!resolved) return c.json({ error: `Hash not found: ${rawText}` }, 404);
+    const result = shuffle(resolved.text, options);
+    await storeText(result.inputHash, resolved.text, store);
+    return c.json(withId(result));
   });
 
-  app.openapi(foldRoute, (c) => {
-    const { text, textB, options } = c.req.valid('json');
-    return c.json(withId(foldIn(text, textB, options)));
+  app.openapi(foldRoute, async (c) => {
+    const { text: rawText, textB: rawTextB, options } = c.req.valid('json');
+    const store = c.env?.TEXT_STORE;
+    const [resolvedA, resolvedB] = await Promise.all([
+      resolveText(rawText, store),
+      resolveText(rawTextB, store),
+    ]);
+    if (!resolvedA) return c.json({ error: `Hash not found: ${rawText}` }, 404);
+    if (!resolvedB) return c.json({ error: `Hash not found: ${rawTextB}` }, 404);
+    const result = foldIn(resolvedA.text, resolvedB.text, options);
+    // Store each source text individually so either can be referenced alone later
+    await Promise.all([
+      storeText(sha256hex(resolvedA.text), resolvedA.text, store),
+      storeText(sha256hex(resolvedB.text), resolvedB.text, store),
+    ]);
+    return c.json(withId(result));
   });
 
-  app.openapi(permutateRoute, (c) => {
-    const { text, options } = c.req.valid('json');
+  app.openapi(permutateRoute, async (c) => {
+    const { text: rawText, options } = c.req.valid('json');
+    const store = c.env?.TEXT_STORE;
+    const resolved = await resolveText(rawText, store);
+    if (!resolved) return c.json({ error: `Hash not found: ${rawText}` }, 404);
     try {
-      return c.json(withId(permutate(text, options)));
+      const result = permutate(resolved.text, options);
+      await storeText(result.inputHash, resolved.text, store);
+      return c.json(withId(result));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Permutation failed';
       return c.json({ error: msg }, 400);
     }
   });
 
-  app.openapi(unifiedRoute, (c) => {
+  app.openapi(unifiedRoute, async (c) => {
     const body = c.req.valid('json');
-    // Re-validate against the discriminated union to get proper types
+    const store = c.env?.TEXT_STORE;
     const parsed = UnifiedRequestSchema.safeParse(body);
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', issues: parsed.error.issues }, 422);
     }
     const req = parsed.data;
+    const resolvedText = await resolveText(req.text, store);
+    if (!resolvedText) return c.json({ error: `Hash not found: ${req.text}` }, 404);
     try {
-      let result: object;
+      let result: ReturnType<typeof quadrant>;
       switch (req.method) {
         case 'quadrant':
-          result = quadrant(req.text, req.options);
+          result = quadrant(resolvedText.text, req.options as Parameters<typeof quadrant>[1]);
           break;
         case 'shuffle':
-          result = shuffle(req.text, req.options);
+          result = shuffle(resolvedText.text, req.options as Parameters<typeof shuffle>[1]);
           break;
-        case 'fold':
-          result = foldIn(req.text, req.textB, req.options);
+        case 'fold': {
+          const rawB = req.textB ?? '';
+          const resolvedB = await resolveText(rawB, store);
+          if (!resolvedB) return c.json({ error: `Hash not found: ${rawB}` }, 404);
+          result = foldIn(resolvedText.text, resolvedB.text, req.options as Parameters<typeof foldIn>[2]);
+          storeText(sha256hex(resolvedText.text), resolvedText.text, store);
+          storeText(sha256hex(resolvedB.text), resolvedB.text, store);
           break;
+        }
         case 'permutation':
-          result = permutate(req.text, req.options);
+          result = permutate(resolvedText.text, req.options as Parameters<typeof permutate>[1]);
           break;
       }
+      storeText(result.inputHash, resolvedText.text, store);
       return c.json(withId(result));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Cut-up failed';
