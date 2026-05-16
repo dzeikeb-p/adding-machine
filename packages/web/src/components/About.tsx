@@ -89,6 +89,26 @@ export function About() {
         produces the same output.
       </p>
 
+      <h2 style={H2}>Sharing</h2>
+
+      <p style={P}>
+        Every run also produces a <strong>hash</strong> — a 64-character SHA-256 fingerprint of
+        your input. After a run, the interface shows a <em>Reproduce this cut-up</em> panel with a{' '}
+        <strong>Copy hash</strong> button.
+      </p>
+
+      <p style={P}>
+        Share the hash and seed with anyone. They paste the hash into the input field, enter the
+        same seed, select the same method, and get the identical result — on any device, without
+        ever seeing the original text. The machine stores the input automatically; the hash is a
+        stable address for it on Cloudflare's global network.
+      </p>
+
+      <p style={P}>
+        This is not cryptography — anyone with the hash can retrieve the stored text. Do not submit
+        text you consider private.
+      </p>
+
       <h2 style={H2}>Technical</h2>
 
       <p style={P}>

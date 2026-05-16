@@ -23,6 +23,8 @@ Four operations, all historically grounded:
 
 All operations are deterministic given a seed. Same input + same seed = same output, always. [Tell me more about how I can use the seed →](docs/seed.md)
 
+Every run also produces a **hash** of your input. Paste that hash as the text input on any device, use the same seed, and you get the exact same result — without ever sharing the original text. [How sharing works →](docs/seed.md#sharing-a-result)
+
 ## Three surfaces
 
 | Surface | URL | For |
